@@ -4,8 +4,8 @@
 
 这款产品为 **ESP32-S3-Touch-LCD-7C**，基于 ESP32-S3 的 7 英寸 RGB LCD 电容触控开发板，可用于 GUI（如 LVGL）开发与外设功能验证。
 
-- [Purchase Link](https://www.waveshare.com/ESP32-S3-Touch-LCD-7.htm)
-- [Documentation](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-7)
+- [Purchase Link](https://www.waveshare.com/ESP32-S3-Touch-LCD-7C-BOX.htm)
+- [Documentation](https://docs.waveshare.net/ESP32-S3-Touch-LCD-7C-BOX)
 
 ![Product Image](./assets/produce-01.webp)
 
