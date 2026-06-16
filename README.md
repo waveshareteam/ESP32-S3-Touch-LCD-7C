@@ -1,11 +1,11 @@
 # Waveshare ESP32-S3-Touch-LCD-7C Product Engineering Sample Program
 
-[中文](README_ZH.md)
+[中文](README_CN.md)
 
 This product is **ESP32-S3-Touch-LCD-7C**, an ESP32-S3 based 7-inch RGB LCD development board with capacitive touch, suitable for GUI development (e.g. LVGL) and peripheral function verification.
 
-- `https://www.waveshare.com/ESP32-S3-Touch-LCD-7.htm`
-- `https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-7`
+- [Purchase Link](https://www.waveshare.com/ESP32-S3-Touch-LCD-7.htm)
+- [Documentation](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-7)
 
 ![Product Image](./assets/produce-01.webp)
 
