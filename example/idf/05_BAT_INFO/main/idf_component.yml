@@ -1,0 +1,12 @@
+dependencies:
+  idf:
+    version: ">=5.1.0"
+
+  espressif/i2c_bus:
+    public: true
+    version: 1.4.*  
+    
+  espressif/bq27220:
+    public: true
+    version: '*'  
+
