@@ -26,7 +26,7 @@ extern "C" {
  */
 #define LVGL_PORT_TASK_MAX_DELAY_MS (100)    // The maximum delay of the LVGL timer task, in milliseconds
 #define LVGL_PORT_TASK_MIN_DELAY_MS (10)    // The minimum delay of the LVGL timer task, in milliseconds
-#define LVGL_PORT_TASK_STACK_SIZE   (30 * 1024) // The stack size of the LVGL timer task, in bytes
+#define LVGL_PORT_TASK_STACK_SIZE   (20 * 1024) // The stack size of the LVGL timer task, in bytes
 #define LVGL_PORT_TASK_PRIORITY     (2)        // The priority of the LVGL timer task
 #define LVGL_PORT_TASK_CORE         (1)            // The core of the LVGL timer task,
 // `-1` means the don't specify the core
@@ -42,8 +42,8 @@ extern "C" {
  *
  */
 
-#define CONFIG_EXAMPLE_LVGL_PORT_BUF_PSRAM 1
-#define CONFIG_EXAMPLE_LVGL_PORT_BUF_INTERNAL 0
+#define CONFIG_EXAMPLE_LVGL_PORT_BUF_PSRAM 0
+#define CONFIG_EXAMPLE_LVGL_PORT_BUF_INTERNAL 1
 
 #if CONFIG_EXAMPLE_LVGL_PORT_BUF_PSRAM
 #define LVGL_PORT_BUFFER_MALLOC_CAPS    (MALLOC_CAP_SPIRAM)

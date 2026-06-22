@@ -1,181 +1,138 @@
 #include <Arduino.h>
 #include <SD_MMC.h>
-#include <string.h>
-#include "src/audio/Config.h"
-#include "src/audio/audio_player.h"
 #include "src/i2c/i2c.h"
 #include "src/io_extension/io_extension.h"
 #include "src/rgb_lcd_port/rgb_lcd_port.h"
 #include "src/touch/gt911.h"
 #include "src/lvgl_port/lvgl_port.h"
-#include "src/audio/UI/lyric_ui.h"
-#include "src/audio/UI/player_ui.h"
-#include "src/system/runtime_monitor.h"
+#include "src/app_lvgl/Music_Controller.h"
+#include "src/app_lvgl/Muisc_Player_UI.h"
+#include "src/speaker_microphone/codec_dev.h"
 
-typedef struct {
-  i2c_master_bus_handle_t bus_handle;
-  esp_lcd_panel_handle_t panel_handle;
-  esp_lcd_touch_handle_t touch_handle;
-} BoardCtx;
+#define MOUNT_POINT "/sdcard"                 // Mount point for SD card
+#define MUSIC_DIR "/music"                    // File-system path used by SD_MMC.open()
+#define EXAMPLE_FORMAT_IF_MOUNT_FAILED false  // Format SD card if mounting fails
+#define EXAMPLE_PIN_CLK GPIO_NUM_12           // GPIO pin for SD card clock
+#define EXAMPLE_PIN_CMD GPIO_NUM_11           // GPIO pin for SD card command line
+#define EXAMPLE_PIN_D0 GPIO_NUM_13            // GPIO pin for SD card data line (D0)
 
-static BoardCtx board = {};
-static bool audio_ready = false;
-static uint32_t playback_elapsed_ms = 0;
-static uint32_t playback_tick_ms = 0;
-static const char *audio_track_list[] = {
-  AUDIO_TRACK_PATH,
-};
-static const size_t audio_track_count = sizeof(audio_track_list) / sizeof(audio_track_list[0]);
-static size_t current_track_index = 0;
+static bool player_started = false;
+static esp_lcd_panel_handle_t lcd_panel_handle = NULL;
+static esp_lcd_touch_handle_t touch_panel_handle = NULL;
+static volatile bool pending_auto_play_next = false;
 
-bool switch_to_prev_track(void);
-bool switch_to_next_track(void);
-bool load_track_at_index(size_t track_index);
+static void audio_player_event_cb(audio_player_cb_ctx_t *ctx) {
+  if (ctx == NULL) {
+    return; 
+  }
 
-const char *get_current_track_path(void) {
-  return audio_track_list[current_track_index];
+  if (ctx->audio_event == AUDIO_PLAYER_CALLBACK_EVENT_IDLE) {
+    pending_auto_play_next = true;
+  }
 }
 
-void make_track_title(const char *track_path, char *title, size_t title_size) {
-  if (track_path == NULL || title == NULL || title_size == 0) {
+static void app_player_ui_sync(void) {
+  const char *file_path = player_started ? get_file_path() : NULL;
+  music_player_ui_set_audio_snapshot(
+    speaker_player_get_state(),
+    speaker_player_is_paused(),
+    get_volume(),
+    file_path);
+}
+
+static void player_ui_setup(void) {
+  lcd_panel_handle = waveshare_esp32_s3_rgb_lcd_init();
+  waveshare_rgb_lcd_bl_on();
+
+  touch_panel_handle = touch_gt911_init(DEV_I2C_Get_Bus_Device());
+  if (touch_panel_handle == NULL) {
+    Serial.printf("touch_gt911_init failed\n");
+  }
+
+  if (lvgl_port_init(lcd_panel_handle, touch_panel_handle) != ESP_OK) {
+    Serial.printf("lvgl_port_init failed\n");
     return;
   }
 
-  const char *base_name = strrchr(track_path, '/');
-  base_name = (base_name == NULL) ? track_path : base_name + 1;
-
-  snprintf(title, title_size, "%s", base_name);
-  char *extension = strrchr(title, '.');
-  if (extension != NULL) {
-    *extension = '\0';
+  if (lvgl_port_lock(-1)) {
+    music_player_ui_init();
+    lvgl_port_unlock();
   }
 }
 
-
-void init_lrc(const char *track_path) {
-  lyric_ui_init();
-
-  if (!lyric_ui_load(SD_MMC, track_path)) {
-    Serial.println("lyric load failed");
-  }
+static bool sd_card_init(void) {
+  SD_MMC.setPins(EXAMPLE_PIN_CLK, EXAMPLE_PIN_CMD, EXAMPLE_PIN_D0);
+  return SD_MMC.begin(MOUNT_POINT, true);
 }
 
-BoardCtx init_board(void) {
-  DEV_I2C_Init();
-  IO_EXTENSION_Init();
-  board.panel_handle = waveshare_esp32_s3_rgb_lcd_init();
-  waveshare_rgb_lcd_bl_on();
+static void player_audio_setup(void) {
+  const char *initial_path = NULL;
 
-  board.bus_handle = DEV_I2C_Get_Bus_Device();
-  board.touch_handle = touch_gt911_init(board.bus_handle);
-
-  return board;
-}
-
-void init_ui(void) {
-  lvgl_port_init(board.panel_handle, board.touch_handle);
-  player_ui_set_track_handlers(switch_to_prev_track, switch_to_next_track);
-  player_ui_init();
-}
-
-bool init_sd(void) {
-  SD_MMC.setPins(SD_CLK_PIN, SD_CMD_PIN, SD_D0_PIN);
-  return SD_MMC.begin(AUDIO_MOUNT_POINT, true);
-}
-
-bool init_audio(i2c_master_bus_handle_t bus_handle) {
-  if (!init_sd()) {
-    Serial.println("SD card init failed");
-    return false;
+  if (!sd_card_init()) {
+    Serial.printf("SD_MMC begin failed\n");
+    return;
   }
 
-  if (!audio_player_init(bus_handle, SD_MMC, get_current_track_path(), AUDIO_PLAYER_VOLUME)) {
-    Serial.println("player init failed");
-    return false;
-  }
-  return true;
-}
-
-bool load_track_at_index(size_t track_index) {
-  if (track_index >= audio_track_count) {
-    return false;
+  if (!scan_music_dir(MUSIC_DIR)) {
+    Serial.printf("No audio file found in %s\n", MUSIC_DIR);
+    return;
   }
 
-  current_track_index = track_index;
-  const char *track_path = get_current_track_path();
-  if (!audio_player_play(track_path)) {
-    Serial.print("track play failed: ");
-    Serial.println(track_path);
-    return false;
+  if (codec_init() != ESP_OK) {
+    Serial.printf("codec_init failed\n");
+    return;
   }
 
-  if (!lyric_ui_load(SD_MMC, track_path)) {
-    Serial.println("lyric load failed");
+  if (speaker_player_init() != ESP_OK) {
+    Serial.printf("speaker_player_init failed\n");
+    return;
   }
 
-  char track_title[64] = {0};
-  make_track_title(track_path, track_title, sizeof(track_title));
-  player_ui_set_track_title(track_title);
-  player_ui_sync_state();
+  speaker_player_register_callback(audio_player_event_cb, NULL);
 
-  playback_elapsed_ms = 0;
-  playback_tick_ms = millis();
-  Serial.print("[audio] playback started: ");
-  Serial.println(track_path);
-  return true;
-}
-
-bool switch_to_prev_track(void) {
-  if (!audio_ready || audio_track_count == 0) {
-    return false;
+  initial_path = get_file_path();
+  if (initial_path == NULL) {
+    Serial.printf("No initial track selected\n");
+    return;
   }
 
-  size_t prev_index = (current_track_index == 0) ? (audio_track_count - 1) : (current_track_index - 1);
-  return load_track_at_index(prev_index);
-}
-
-bool switch_to_next_track(void) {
-  if (!audio_ready || audio_track_count == 0) {
-    return false;
+  speaker_codec_volume_set(CODEC_DEFAULT_VOLUME, NULL);
+  if (speaker_player_play_file(initial_path) != ESP_OK) {
+    Serial.printf("speaker_player_play_file failed: %s\n", initial_path);
+    return;
   }
 
-  size_t next_index = (current_track_index + 1) % audio_track_count;
-  return load_track_at_index(next_index);
+  Serial.printf("[audio] start: %s\n", initial_path);
+  player_started = true;
 }
 
 void setup(void) {
   Serial.begin(115200);
-  init_board();
-  runtime_monitor_start(5000);
-
-  if (!init_audio(board.bus_handle)) {
-    return;
-  }
-
-  init_ui();
-  init_lrc(get_current_track_path());
-  audio_ready = true;
-  player_ui_sync_state();
-
-  char track_title[64] = {0};
-  make_track_title(get_current_track_path(), track_title, sizeof(track_title));
-  player_ui_set_track_title(track_title);
-  playback_elapsed_ms = 0;
-  playback_tick_ms = millis();
-  Serial.print("[audio] playback started: ");
-  Serial.println(get_current_track_path());
+  delay(100);
+  Serial.println("[build] reusable_lvgl_player_ui_v1");
+  DEV_I2C_Init();
+  IO_EXTENSION_Init();
+  player_ui_setup();
+  player_audio_setup();
+  app_player_ui_sync();
 }
 
 void loop(void) {
-  audio_player_loop();
-  if (audio_ready) {
-    uint32_t now_ms = millis();
-    if (!audio_player_is_paused()) {
-      playback_elapsed_ms += now_ms - playback_tick_ms;
-    }
-    playback_tick_ms = now_ms;
-    lyric_ui_update(playback_elapsed_ms);
+  int pending_volume = 0;
+
+  speaker_player_process();
+
+  if (music_player_ui_take_pending_volume(&pending_volume)) {
+    (void)set_volume_sta(pending_volume);
   }
+
+  if (pending_auto_play_next) {
+    pending_auto_play_next = false;
+    if (!play_next_music()) {
+      Serial.printf("[audio] auto next failed\n");
+    }
+  }
+
+  app_player_ui_sync();
   delay(10);
 }
-

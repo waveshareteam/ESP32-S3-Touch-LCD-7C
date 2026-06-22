@@ -70,6 +70,5 @@
  void IO_EXTENSION_Pwm_Output(uint8_t Value);
  uint16_t IO_EXTENSION_Adc_Input();
  uint8_t IO_EXTENSION_Rtc_Int_Read();
- 
  #endif  // __IO_EXTENSION_H
  

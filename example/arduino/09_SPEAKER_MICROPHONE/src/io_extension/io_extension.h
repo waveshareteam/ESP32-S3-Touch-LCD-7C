@@ -16,12 +16,8 @@
 
  #ifndef __IO_EXTENSION_H
  #define __IO_EXTENSION_H
-
- #ifdef __cplusplus
- extern "C" {
- #endif
  
- #include "../i2c/i2c.h"  // Include I2C header for I2C communication functions
+ #include "i2c.h"  // Include I2C header for I2C communication functions
  
  /* 
   * IO EXTENSION GPIO control via I2C - Register and Command Definitions
@@ -43,23 +39,23 @@
  #define IO_EXTENSION_ADC_ADDR         0x06 // 
  #define IO_EXTENSION_RTC_INT_ADDR     0x07 // 
  
-/* Specific IO pin bit masks */
-#define IO_EXTENSION_IO_0     (1U << 0)   // IO0 
-#define IO_EXTENSION_IO_1     (1U << 1)   // IO1 (used for touch reset)
-#define IO_EXTENSION_IO_2     (1U << 2)   // IO2 (backlight control)
-#define IO_EXTENSION_IO_3     (1U << 3)   // IO3 (PA)
-#define IO_EXTENSION_IO_4     (1U << 4)   // IO4 (SD card CS pin)
-#define IO_EXTENSION_IO_5     (1U << 5)   // IO5 (Select communication interface: 0 for USB, 1 for CAN)
-#define IO_EXTENSION_IO_6     (1U << 6)   // IO6
-#define IO_EXTENSION_IO_7     (1U << 7)   // IO7
-#define IO_EXTENSION_IO_8     (1U << 8)   // IO8
-#define IO_EXTENSION_IO_9     (1U << 9)   // IO9
-#define IO_EXTENSION_IO_10    (1U << 10)  // IO10
-#define IO_EXTENSION_IO_11    (1U << 11)  // IO11
-#define IO_EXTENSION_IO_12    (1U << 12)  // IO12
-#define IO_EXTENSION_IO_13    (1U << 13)  // IO13
-#define IO_EXTENSION_IO_14    (1U << 14)  // IO14
-#define IO_EXTENSION_IO_15    (1U << 15)  // IO15
+ /* Specific IO pin assignments */
+ #define IO_EXTENSION_IO_0          0x00  // IO0 
+ #define IO_EXTENSION_IO_1          0x01  // IO1 (used for touch reset)
+ #define IO_EXTENSION_IO_2          0x02  // IO2 (backlight control)
+ #define IO_EXTENSION_IO_3          0x03  // IO3 (PA)
+ #define IO_EXTENSION_IO_4          0x04  // IO4 (SD card CS pin)
+ #define IO_EXTENSION_IO_5          0x05  // IO5 (Select communication interface: 0 for USB, 1 for CAN)
+ #define IO_EXTENSION_IO_6          0x06  // IO6
+ #define IO_EXTENSION_IO_7          0x07  // IO7
+ #define IO_EXTENSION_IO_8          0x08  // IO8
+ #define IO_EXTENSION_IO_9          0x09  // IO9
+ #define IO_EXTENSION_IO_10         0x0A  // IO10
+ #define IO_EXTENSION_IO_11         0x0B  // IO11
+ #define IO_EXTENSION_IO_12         0x0C  // IO12
+ #define IO_EXTENSION_IO_13         0x0D  // IO13
+ #define IO_EXTENSION_IO_14         0x0E  // IO14
+ #define IO_EXTENSION_IO_15         0x0F  // IO15
 
  /* Structure to represent the IO EXTENSION device */
  typedef struct _io_extension_obj_t {
@@ -72,17 +68,11 @@
  /* Function declarations */
  void IO_EXTENSION_SetAllMode(uint16_t mode_mask) ;     // Set all IO pin modes at once    
  void IO_EXTENSION_IO_Mode(uint8_t pin, uint8_t mode);      // Set IO pin modes (input/output)
- void IO_EXTENSION_Output(uint16_t mask, uint8_t value);     // Set IO pin output (high/low)
+ void IO_EXTENSION_Output(uint8_t pin, uint8_t value);     // Set IO pin output (high/low)
  uint8_t IO_EXTENSION_Input(uint8_t pin);   // Read IO pin input state
  void IO_EXTENSION_Pwm_Output(uint8_t Value);
  uint16_t IO_EXTENSION_Adc_Input();
  uint8_t IO_EXTENSION_RTC_INT_READ();
  void IO_EXTENSION_Init();                     // Initialize the IO_EXTENSION device
-
- #ifdef __cplusplus
- }
- #endif
-
-
  #endif  // __IO_EXTENSION_H
  
