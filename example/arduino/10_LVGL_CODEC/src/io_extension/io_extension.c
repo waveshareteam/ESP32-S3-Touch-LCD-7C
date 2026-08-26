@@ -85,12 +85,14 @@ void IO_EXTENSION_Init()
  * @param pin The pin number to set (0-7).
  * @param value The value to set on the specified pin (0 = low, 1 = high).
  */
-void IO_EXTENSION_Output(uint16_t mask, uint8_t value)
+void IO_EXTENSION_Output(uint8_t pin, uint8_t value)
 {
-    if (value)
-        IO_EXTENSION.Last_io_value |= mask;   // 将 mask 对应的 IO 设置高
-    else
-        IO_EXTENSION.Last_io_value &= ~mask;  // 将 mask 对应的 IO 设置低
+    if (pin > 15) return;
+
+    uint16_t mask = (uint16_t)(1U << pin);
+    IO_EXTENSION.Last_io_value = value ?
+        (IO_EXTENSION.Last_io_value | mask) :
+        (IO_EXTENSION.Last_io_value & (uint16_t)(~mask));
 
     // 准备 I2C 数据
     uint8_t data[3];

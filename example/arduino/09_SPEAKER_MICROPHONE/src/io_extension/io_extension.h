@@ -14,10 +14,14 @@
  *
  ******************************************************************************/
 
- #ifndef __IO_EXTENSION_H
- #define __IO_EXTENSION_H
- 
- #include "i2c.h"  // Include I2C header for I2C communication functions
+#ifndef __IO_EXTENSION_H
+#define __IO_EXTENSION_H
+
+#include "../i2c/i2c.h"  // Include I2C header for I2C communication functions
+
+#ifdef __cplusplus
+extern "C" {
+#endif
  
  /* 
   * IO EXTENSION GPIO control via I2C - Register and Command Definitions
@@ -66,7 +70,7 @@
  
  
  /* Function declarations */
- void IO_EXTENSION_SetAllMode(uint16_t mode_mask) ;     // Set all IO pin modes at once    
+ void IO_EXTENSION_SetAllMode(uint16_t mode_mask) ;     // Set all IO pin modes at once
  void IO_EXTENSION_IO_Mode(uint8_t pin, uint8_t mode);      // Set IO pin modes (input/output)
  void IO_EXTENSION_Output(uint8_t pin, uint8_t value);     // Set IO pin output (high/low)
  uint8_t IO_EXTENSION_Input(uint8_t pin);   // Read IO pin input state
@@ -74,5 +78,10 @@
  uint16_t IO_EXTENSION_Adc_Input();
  uint8_t IO_EXTENSION_RTC_INT_READ();
  void IO_EXTENSION_Init();                     // Initialize the IO_EXTENSION device
- #endif  // __IO_EXTENSION_H
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // __IO_EXTENSION_H
  

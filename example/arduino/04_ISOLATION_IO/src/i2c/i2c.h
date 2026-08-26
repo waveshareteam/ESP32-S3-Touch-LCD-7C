@@ -19,6 +19,10 @@
 #include "driver/i2c_master.h"    // ESP32 I2C master driver library
 #include "esp_log.h"        // ESP32 logging library for debugging
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Define the SDA (data) and SCL (clock) pins for I2C communication
 #define EXAMPLE_I2C_MASTER_SDA GPIO_NUM_47  // SDA pin
 #define EXAMPLE_I2C_MASTER_SCL GPIO_NUM_48  // SCL pin
@@ -112,5 +116,9 @@ void DEV_I2C_Write_Nbyte(i2c_master_dev_handle_t dev_handle, uint8_t *pdata, uin
  * @param len The number of bytes to read.
  */
 void DEV_I2C_Read_Nbyte(i2c_master_dev_handle_t dev_handle, uint8_t Cmd, uint8_t *pdata, uint8_t len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -62,7 +62,7 @@ void loop() {
   printf("Now_time is %s\r\n", datetime_str);
 
   // Poll external IO pin for alarm (low level = alarm triggered)
-  if (IO_EXTENSION_Rtc_Int_Read() == 0)
+  if (IO_EXTENSION_RTC_INT_READ() == 0)
   {
       // Re-enable alarm if repeated alarms are required
       PCF85063A_Enable_Alarm();
